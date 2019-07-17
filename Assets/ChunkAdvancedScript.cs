@@ -8,9 +8,9 @@ using UnityEngine.Rendering;
 public class ChunkAdvancedScript : MonoBehaviour
 {
     // Set the Voxel Chunk size globally
-    public static uint ChunkWidth = 10;
-    public static uint ChunkHeight = 10;
-    public static uint ChunkDepth = 10;
+    public static uint ChunkWidth = 16;
+    public static uint ChunkHeight = 16;
+    public static uint ChunkDepth = 16;
 
     // Set the Update Frequency for this chunk test
     public float UpdateFrequency = 0.1f;
@@ -95,7 +95,7 @@ public class ChunkAdvancedScript : MonoBehaviour
                 if (outOfAttempts)
                     continue;
                 // We found a voxel that differs from the one we are setting, so try setting it
-                SetVoxel(x, y, z, (byte)voxel);
+                SetVoxel(x, y, z, voxel);
             }
         }
 
@@ -154,8 +154,15 @@ public class ChunkAdvancedScript : MonoBehaviour
                         for (var z = 0; z < ChunkWidth; z++)
                         {
                             if (voxels[x][y][z] == 0) continue;
-
-                            CubeData.AddCube(ref vertexList, ref uvList, ref normalList, ref indexList, new Vector3(x, y, z), false);
+                            CubeData.AddCube(ref vertexList, ref uvList, ref normalList, ref indexList, new Vector3(x, y, z), new byte[]
+                            {
+                                _getVoxel(voxels, x, y, z - 1),
+                                _getVoxel(voxels, x - 1, y, z),
+                                _getVoxel(voxels, x, y - 1, z),
+                                _getVoxel(voxels, x, y, z + 1),
+                                _getVoxel(voxels, x + 1, y, z),
+                                _getVoxel(voxels, x, y + 1, z),
+                            }, false);
                         }
                     }
                 }
@@ -176,6 +183,14 @@ public class ChunkAdvancedScript : MonoBehaviour
             });
         }
         //UpdateDebug();
+    }
+
+    private byte _getVoxel(byte[][][] voxels, int x, int y, int z)
+    {
+        if (x < 0 || x >= ChunkWidth) return 0;
+        if (y < 0 || y >= ChunkHeight) return 0;
+        if (z < 0 || z >= ChunkDepth) return 0;
+        return voxels[x][y][z];
     }
 
     void OnDrawGizmos()

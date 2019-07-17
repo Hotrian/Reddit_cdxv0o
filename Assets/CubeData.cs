@@ -92,6 +92,20 @@ namespace Honey.Meshing
             AddFace(ref v, ref u, ref n, ref i, ref count, pos, CubeFace.Right, scale, recycleVertices);
             AddFace(ref v, ref u, ref n, ref i, ref count, pos, CubeFace.Top, scale, recycleVertices);
         }
+        public static void AddCube(ref List<Vector3> v, ref List<Vector2> u, ref List<Vector3> n, ref List<int> i, Vector3 pos, byte[] neighbors, bool recycleVertices = false)
+        {
+            AddCube(ref v, ref u, ref n, ref i, pos, Vector3.one, neighbors, recycleVertices);
+        }
+        public static void AddCube(ref List<Vector3> v, ref List<Vector2> u, ref List<Vector3> n, ref List<int> i, Vector3 pos, Vector3 scale, byte[] neighbors, bool recycleVertices = false)
+        {
+            var count = v.Count;
+            if (neighbors[(int)CubeFace.Back] == 0)   AddFace(ref v, ref u, ref n, ref i, ref count, pos, CubeFace.Back, scale, recycleVertices);
+            if (neighbors[(int)CubeFace.Left] == 0)   AddFace(ref v, ref u, ref n, ref i, ref count, pos, CubeFace.Left, scale, recycleVertices);
+            if (neighbors[(int)CubeFace.Bottom] == 0) AddFace(ref v, ref u, ref n, ref i, ref count, pos, CubeFace.Bottom, scale, recycleVertices);
+            if (neighbors[(int)CubeFace.Front] == 0)  AddFace(ref v, ref u, ref n, ref i, ref count, pos, CubeFace.Front, scale, recycleVertices);
+            if (neighbors[(int)CubeFace.Right] == 0)  AddFace(ref v, ref u, ref n, ref i, ref count, pos, CubeFace.Right, scale, recycleVertices);
+            if (neighbors[(int)CubeFace.Top] == 0)    AddFace(ref v, ref u, ref n, ref i, ref count, pos, CubeFace.Top, scale, recycleVertices);
+        }
 
         public static void AddFace(ref List<Vector3> v, ref List<Vector2> u, ref List<Vector3> n, ref List<int> i, ref int count, Vector3 pos, CubeFace face, bool recycleVertices = false)
         {
