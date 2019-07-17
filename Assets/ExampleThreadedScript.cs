@@ -10,7 +10,7 @@ public class ExampleThreadedScript : MonoBehaviour
 {
     public Material MeshMaterial;
     public ExampleType Example;
-
+    public ChunkScript ChunkScriptPrefab;
     void Start()
     {
         switch (Example)
@@ -104,6 +104,9 @@ public class ExampleThreadedScript : MonoBehaviour
                     });
                 });
                 break;
+            case ExampleType.Chunk:
+                var chunk = Instantiate(ChunkScriptPrefab.gameObject, new Vector3(0f, 0f, 0f), Quaternion.identity);
+                break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
@@ -129,5 +132,6 @@ public class ExampleThreadedScript : MonoBehaviour
         AccessMainThreadVariableGood,
         PerformActionMainThread,
         PerformAssignmentMainThread,
+        Chunk,
     }
 }
