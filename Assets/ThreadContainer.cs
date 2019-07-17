@@ -14,6 +14,8 @@ namespace Honey.Threading
         public readonly object ExecuteLocker;
 
         private readonly List<ThreadExecuteMessage> _executeQueue; // A queue is used in case we somehow end up with more than one action
+
+        public readonly Dictionary<string, object> ContainerObjects;
 #if DEBUGGING
         public readonly List<AutoResetEvent> WaitList;
 #endif
@@ -25,6 +27,7 @@ namespace Honey.Threading
             AutoResetEvent = new AutoResetEvent(false);
             ExecuteLocker = new object();
             _executeQueue = new List<ThreadExecuteMessage>();
+            ContainerObjects = new Dictionary<string, object>();
 #if DEBUGGING
             WaitList = new List<AutoResetEvent>();
 #endif

@@ -368,8 +368,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   MeshMaterial: {fileID: 2100000, guid: 836cc9e9392ad3d4ea39383f4938a335, type: 2}
-  Example: 5
+  Example: 6
   ChunkScriptPrefab: {fileID: 5740649712129520407, guid: 961ff986e688f11418998447d14bf6c1,
+    type: 3}
+  ChunkAdvancedScriptPrefab: {fileID: 4515789474198591110, guid: dddf66706fb2ab24e971095ed12f790e,
     type: 3}
 --- !u!4 &1452453815
 Transform:

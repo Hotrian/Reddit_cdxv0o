@@ -11,6 +11,7 @@ public class ExampleThreadedScript : MonoBehaviour
     public Material MeshMaterial;
     public ExampleType Example;
     public ChunkScript ChunkScriptPrefab;
+    public ChunkAdvancedScript ChunkAdvancedScriptPrefab;
     void Start()
     {
         switch (Example)
@@ -107,6 +108,16 @@ public class ExampleThreadedScript : MonoBehaviour
             case ExampleType.Chunk:
                 var chunk = Instantiate(ChunkScriptPrefab.gameObject, new Vector3(0f, 0f, 0f), Quaternion.identity);
                 break;
+            case ExampleType.ChunkAdvanced:
+                Instantiate(ChunkAdvancedScriptPrefab.gameObject, new Vector3(0f, 0f, 0f), Quaternion.identity);
+                Instantiate(ChunkAdvancedScriptPrefab.gameObject, new Vector3(ChunkAdvancedScript.ChunkWidth, 0f, 0f), Quaternion.identity);
+                Instantiate(ChunkAdvancedScriptPrefab.gameObject, new Vector3(0f, 0f, ChunkAdvancedScript.ChunkDepth), Quaternion.identity);
+                Instantiate(ChunkAdvancedScriptPrefab.gameObject, new Vector3(ChunkAdvancedScript.ChunkWidth, 0f, ChunkAdvancedScript.ChunkDepth), Quaternion.identity);
+                Instantiate(ChunkAdvancedScriptPrefab.gameObject, new Vector3(0f, ChunkAdvancedScript.ChunkHeight, 0f), Quaternion.identity);
+                Instantiate(ChunkAdvancedScriptPrefab.gameObject, new Vector3(ChunkAdvancedScript.ChunkWidth, ChunkAdvancedScript.ChunkHeight, 0f), Quaternion.identity);
+                Instantiate(ChunkAdvancedScriptPrefab.gameObject, new Vector3(0f, ChunkAdvancedScript.ChunkHeight, ChunkAdvancedScript.ChunkDepth), Quaternion.identity);
+                Instantiate(ChunkAdvancedScriptPrefab.gameObject, new Vector3(ChunkAdvancedScript.ChunkWidth, ChunkAdvancedScript.ChunkHeight, ChunkAdvancedScript.ChunkDepth), Quaternion.identity);
+                break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
@@ -133,5 +144,6 @@ public class ExampleThreadedScript : MonoBehaviour
         PerformActionMainThread,
         PerformAssignmentMainThread,
         Chunk,
+        ChunkAdvanced
     }
 }

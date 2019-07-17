@@ -2,14 +2,15 @@
 using Honey.Meshing;
 using Honey.Threading;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 [RequireComponent(typeof(MeshRenderer), typeof(MeshFilter))]
-public class ChunkScript : MonoBehaviour
+public class ChunkAdvancedScript : MonoBehaviour
 {
     // Set the Voxel Chunk size globally
-    public static uint ChunkWidth = 16;
-    public static uint ChunkHeight = 16;
-    public static uint ChunkDepth = 16;
+    public static uint ChunkWidth = 10;
+    public static uint ChunkHeight = 10;
+    public static uint ChunkDepth = 10;
 
     // Set the Update Frequency for this chunk test
     public float UpdateFrequency = 0.1f;
@@ -34,23 +35,28 @@ public class ChunkScript : MonoBehaviour
     private float _updateTime;
 
     //Debugging
-    private float _debugTime;
-    private int _debugVoxelUpdates;
-    private int _debugMeshUpdates;
-    private readonly object _debugLocker = new object();
+    private static float _debugTime;
+    private static int _debugVoxelUpdates;
+    private static int _debugMeshUpdates;
+    private static readonly object DebugLocker = new object();
+
+    private volatile bool _dirty;
     void Start()
     {
         // Initialize the Voxel data for this Chunk to Air
-        _voxels = new byte[ChunkWidth][][];
-        for (var x = 0; x < ChunkWidth; x++)
+        lock (_voxelLocker)
         {
-            _voxels[x] = new byte[ChunkHeight][];
-            for (var y = 0; y < ChunkWidth; y++)
+            _voxels = new byte[ChunkWidth][][];
+            for (var x = 0; x < ChunkWidth; x++)
             {
-                _voxels[x][y] = new byte[ChunkDepth];
-                for (var z = 0; z < ChunkWidth; z++)
+                _voxels[x] = new byte[ChunkHeight][];
+                for (var y = 0; y < ChunkWidth; y++)
                 {
-                    _voxels[x][y][z] = (byte) VoxelType.Air;
+                    _voxels[x][y] = new byte[ChunkDepth];
+                    for (var z = 0; z < ChunkWidth; z++)
+                    {
+                        _voxels[x][y][z] = (byte) VoxelType.Air;
+                    }
                 }
             }
         }
@@ -77,7 +83,7 @@ public class ChunkScript : MonoBehaviour
                 var outOfAttempts = false;
                 while (GetVoxel(x, y, z) == voxel)
                 {
-                    if (attempts > 10)
+                    if (attempts > 20)
                     {
                         outOfAttempts = true;
                         break;
@@ -89,10 +95,86 @@ public class ChunkScript : MonoBehaviour
                 if (outOfAttempts)
                     continue;
                 // We found a voxel that differs from the one we are setting, so try setting it
-                SetVoxel(x, y, z, voxel);
+                SetVoxel(x, y, z, (byte)voxel);
             }
         }
 
+        if (_dirty)
+        {
+            _dirty = false;
+            ThreadManager.Execute((container) =>
+            {
+                // Get the job Id for this job
+                var job = GetNextJobId();
+
+                // Arrays are reference types, so create a blank array to grab the values
+                var voxels = new byte[ChunkWidth][][];
+                for (var x = 0; x < ChunkWidth; x++)
+                {
+                    voxels[x] = new byte[ChunkHeight][];
+                    for (var y = 0; y < ChunkWidth; y++)
+                    {
+                        voxels[x][y] = new byte[ChunkDepth];
+                    }
+                }
+                // Grab the current state
+                lock (_voxelLocker)
+                {
+                    for (var x = 0; x < ChunkWidth; x++)
+                    {
+                        for (var y = 0; y < ChunkHeight; y++)
+                        {
+                            for (var z = 0; z < ChunkDepth; z++)
+                            {
+                                voxels[x][y][z] = _voxels[x][y][z];
+                            }
+                        }
+                    }
+                }
+
+                // Grab the Lists from our Container or generate them
+                if (!container.ContainerObjects.ContainsKey("VertexList")) container.ContainerObjects.Add("VertexList", new List<Vector3>());
+                if (!container.ContainerObjects.ContainsKey("UVList")) container.ContainerObjects.Add("UVList", new List<Vector2>());
+                if (!container.ContainerObjects.ContainsKey("NormalList")) container.ContainerObjects.Add("NormalList", new List<Vector3>());
+                if (!container.ContainerObjects.ContainsKey("IndexList")) container.ContainerObjects.Add("IndexList", new List<int>());
+                var vertexList = (List<Vector3>)container.ContainerObjects["VertexList"];
+                var uvList = (List<Vector2>)container.ContainerObjects["UVList"];
+                var normalList = (List<Vector3>)container.ContainerObjects["NormalList"];
+                var indexList = (List<int>)container.ContainerObjects["IndexList"];
+                vertexList.Clear();
+                uvList.Clear();
+                normalList.Clear();
+                indexList.Clear();
+
+                // Generate mesh data
+                for (var x = 0; x < ChunkWidth; x++)
+                {
+                    for (var y = 0; y < ChunkWidth; y++)
+                    {
+                        for (var z = 0; z < ChunkWidth; z++)
+                        {
+                            if (voxels[x][y][z] == 0) continue;
+
+                            CubeData.AddCube(ref vertexList, ref uvList, ref normalList, ref indexList, new Vector3(x, y, z), false);
+                        }
+                    }
+                }
+
+                // Convert these lists to arrays for the mesh
+                var vertices = vertexList.ToArray();
+                var uvs = uvList.ToArray();
+                var normals = normalList.ToArray();
+                var indices = indexList.ToArray();
+
+                ThreadManager.ExecuteOnMainThread(() =>
+                {
+                    if (GetLastJobId() > job) // Stale Mesh
+                        return;
+                    SetLastJobId(job);
+                    SetMesh(vertices, uvs, normals, indices);
+                });
+            });
+        }
         //UpdateDebug();
     }
 
@@ -108,71 +190,18 @@ public class ChunkScript : MonoBehaviour
     /// </summary>
     private void SetVoxel(int x, int y, int z, byte voxelId)
     {
-        lock (_debugLocker)
+        lock (DebugLocker)
         {
             _debugVoxelUpdates++;
-        }
-        // Arrays are reference types, so create a blank array to grab the value to
-        var voxels = new byte[ChunkWidth][][];
-        for (var x1 = 0; x1 < ChunkWidth; x1++)
-        {
-            voxels[x1] = new byte[ChunkHeight][];
-            for (var y1 = 0; y1 < ChunkWidth; y1++)
-            {
-                voxels[x1][y1] = new byte[ChunkDepth];
-            }
         }
         // Update the Chunk state and grab the current state
         lock (_voxelLocker)
         {
             if (_voxels[x][y][z] == voxelId) return; // Don't need to generate a new mesh if the state is unchanged
             _voxels[x][y][z] = voxelId;
-            for (var x1 = 0; x1 < ChunkWidth; x1++)
-            {
-                for (var y1 = 0; y1 < ChunkHeight; y1++)
-                {
-                    for (var z1 = 0; z1 < ChunkDepth; z1++)
-                    {
-                        voxels[x1][y1][z1] = _voxels[x1][y1][z1];
-                    }
-                }
-            }
         }
-        ThreadManager.Execute((container) =>
-        {
-            var job = GetNextJobId();
 
-            // Generate mesh data
-            var vertices = new List<Vector3>();
-            var uvs = new List<Vector2>();
-            var normals = new List<Vector3>();
-            var indices = new List<int>();
-            for (var x1 = 0; x1 < ChunkWidth; x1++)
-            {
-                for (var y1 = 0; y1 < ChunkHeight; y1++)
-                {
-                    for (var z1 = 0; z1 < ChunkDepth; z1++)
-                    {
-                        if (voxels[x1][y1][z1] == 0) continue;
-
-                        CubeData.AddCube(ref vertices, ref uvs, ref normals, ref indices, new Vector3(x1, y1, z1), false);
-                    }
-                }
-            }
-
-            // Convert these lists to arrays for the mesh
-            var verts = vertices.ToArray();
-            var uv = uvs.ToArray();
-            var norm = normals.ToArray();
-            var ind = indices.ToArray();
-            ThreadManager.ExecuteOnMainThread(() =>
-            {
-                if (GetLastJobId() > job) // Stale Mesh
-                    return;
-                SetLastJobId(job);
-                SetMesh(verts, uv, norm, ind);
-            });
-        });
+        _dirty = true;
     }
 
     /// <summary>
@@ -200,19 +229,20 @@ public class ChunkScript : MonoBehaviour
             });
             return;
         }
-        lock (_debugLocker)
+        lock (DebugLocker)
         {
             _debugMeshUpdates++;
         }
         if (MyMeshFilter.mesh == null)
         {
             // We don't have a mesh yet, so just create a new one
-            MyMeshFilter.mesh = new Mesh()
+            MyMeshFilter.mesh = new Mesh
             {
                 vertices = verts,
                 uv = uv,
                 normals = norm,
-                triangles = ind
+                triangles = ind,
+                //indexFormat = IndexFormat.UInt32,
             };
         }
         else // We already have a mesh, so update it to reduce garbage
@@ -288,7 +318,7 @@ public class ChunkScript : MonoBehaviour
             _debugTime += 1;
             int vUpdates;
             int mUpdates;
-            lock (_debugLocker)
+            lock (DebugLocker)
             {
                 vUpdates = _debugVoxelUpdates;
                 _debugVoxelUpdates = 0;
