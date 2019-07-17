@@ -74,13 +74,20 @@ public class ChunkScript : MonoBehaviour
                 var x = Random.Range(0, (int)ChunkWidth);
                 var y = Random.Range(0, (int)ChunkHeight);
                 var z = Random.Range(0, (int)ChunkDepth);
+                var outOfAttempts = false;
                 while (GetVoxel(x, y, z) == voxel)
                 {
                     if (attempts > 10)
-                        return;
+                    {
+                        outOfAttempts = true;
+                        break;
+                    }
                     voxel = (byte)Random.Range(0, 2);
                     attempts++;
                 }
+
+                if (outOfAttempts)
+                    continue;
                 // We found a voxel that differs from the one we are setting, so try setting it
                 SetVoxel(x, y, z, voxel);
             }
