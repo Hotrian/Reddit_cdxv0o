@@ -45,10 +45,10 @@ public class ChunkScript : MonoBehaviour
         for (var x = 0; x < ChunkWidth; x++)
         {
             _voxels[x] = new byte[ChunkHeight][];
-            for (var y = 0; y < ChunkWidth; y++)
+            for (var y = 0; y < ChunkHeight; y++)
             {
                 _voxels[x][y] = new byte[ChunkDepth];
-                for (var z = 0; z < ChunkWidth; z++)
+                for (var z = 0; z < ChunkDepth; z++)
                 {
                     _voxels[x][y][z] = (byte) VoxelType.Air;
                 }
@@ -117,7 +117,7 @@ public class ChunkScript : MonoBehaviour
         for (var x1 = 0; x1 < ChunkWidth; x1++)
         {
             voxels[x1] = new byte[ChunkHeight][];
-            for (var y1 = 0; y1 < ChunkWidth; y1++)
+            for (var y1 = 0; y1 < ChunkHeight; y1++)
             {
                 voxels[x1][y1] = new byte[ChunkDepth];
             }
