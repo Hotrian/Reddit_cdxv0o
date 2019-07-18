@@ -149,9 +149,9 @@ public class ChunkAdvancedScript : MonoBehaviour
                 // Generate mesh data
                 for (var x = 0; x < ChunkWidth; x++)
                 {
-                    for (var y = 0; y < ChunkWidth; y++)
+                    for (var y = 0; y < ChunkHeight; y++)
                     {
-                        for (var z = 0; z < ChunkWidth; z++)
+                        for (var z = 0; z < ChunkDepth; z++)
                         {
                             if (voxels[x][y][z] == 0) continue;
                             CubeData.AddCube(ref vertexList, ref uvList, ref normalList, ref indexList, new Vector3(x, y, z), new byte[]
@@ -220,7 +220,7 @@ public class ChunkAdvancedScript : MonoBehaviour
     }
 
     /// <summary>
-    /// Thread Safe! Sets a Voxel in this Chunk.
+    /// Thread Safe! Gets a Voxel in this Chunk.
     /// </summary>
     private byte GetVoxel(int x, int y, int z)
     {
